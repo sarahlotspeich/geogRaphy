@@ -1,0 +1,500 @@
+---
+title: "geogRaphy: an introduction to spatial data in R"
+date: "17 Nov 2020"
+author: "Sarah C. Lotspeich"
+institute: "Vanderbilt University"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    css: ["xaringan-themer.css"]
+    nature:
+      highlightStyle: solarized-dark
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+```{r xaringan-themer, include = FALSE}
+library(xaringanthemer)
+#solarized_light()
+style_mono_light(base_color = "#23395b")
+```
+```{r, include = FALSE}
+library(ggplot2); library(magrittr); library(stringr); library(ggmap); library(dplyr)
+register_google(key = "AIzaSyCt7wC2bLJKbbPl0-3GM0o7LDccLuMycRk", write = TRUE)
+```
+
+class: inverse, center, middle
+
+# Introduction
+
+---
+class: center, middle
+
+# spatial data:
+
+### noun • [spay-shull day-ta] • data which is representative of a specific, geographic location on the surface of the Earth.
+
+.footnote[
+[1] [What Is Spatial Data?](https://www.safe.com/what-is/spatial-data/)
+]
+
+---
+# Two main types:
+.pull-left[
+## 1. Vector data
+  - Graphical representations of the real world.
+  - Usually, points, lines, and polygons.
+  - GIS shapefiles (`.shp`) are typically vector data.
+]
+
+.pull-right[
+  ![](Vector.png)
+]
+
+.footnote[
+[1] [Geospatial Data Models](http://gsp.humboldt.edu/OLM/Courses/GSP_216_Online/lesson3-1/data-models.html) 
+
+[2] [What Is Spatial Data?](https://www.safe.com/what-is/spatial-data/)
+
+[3] [Vector and Raster: A Tale of Two Spatial Data Types](https://www.vebuso.com/2019/01/vector-raster-tale-two-spatial-data-types/)
+]
+
+---
+# Two main types:
+.pull-left[
+## 2. Raster data
+  - Continuous surface divided into a grid of cells (pixels).
+  - Each pixel contains measured value for the area it represents. 
+  - One cell might represent a 10m x 10m area. 
+]
+
+.pull-right[
+  ![](raster.png)
+]
+
+.footnote[
+[1] [Geospatial Data Models](http://gsp.humboldt.edu/OLM/Courses/GSP_216_Online/lesson3-1/data-models.html) 
+
+[2] [What Is Spatial Data?](https://www.safe.com/what-is/spatial-data/)
+
+[3] [Vector and Raster: A Tale of Two Spatial Data Types](https://www.vebuso.com/2019/01/vector-raster-tale-two-spatial-data-types/)
+]
+
+---
+# More than the "where"
+
+  - Spatial data contain more than just location. 
+  - Additional attributes can be tied to the observation based on its location. 
+  - Non-spatial features are called **attributes**.
+  - Example: New York City subway entrances.
+
+```{r, echo = F, cache = TRUE, warning = F, message = F, fig.width = 10, fig.height = 7}
+options(digits=14)
+ny <- read.csv("https://download.data.world/s/elzuv3txcj2hcxw7im2v7b4rlo3alj", stringsAsFactors = F) %>% 
+  dplyr::mutate(long = NA, lat = NA)
+for (r in 1:nrow(ny)) {
+  geo_r <- ny$the_geom[r] %>% str_split(pattern = " ")
+  long_r <- as.numeric(sub(pattern = "\\(", replacement = "", x = geo_r[[1]][2]))
+  lat_r <- as.numeric(sub(pattern = "\\)", replacement = "", x = geo_r[[1]][3]))
+  ny$long[r] <- long_r
+  ny$lat[r] <- lat_r
+}
+
+newyork.map <- ggmap::get_map(location= 'Lower Manhattan, New York', 
+                       maptype='roadmap', color='bw',source='google',zoom=13)
+
+map1 <- ggmap(newyork.map) + 
+  geom_point(data = ny, aes(x = long, y = lat), color = 'seagreen', size = 2, alpha = 0.25)+
+  theme(axis.ticks = element_blank(), axis.text = element_blank())+
+  xlab('') + ylab('') + ggtitle("New York City subway entrances")
+
+ny %<>% dplyr::mutate(aline = factor(grepl("A", line), labels = c("No", "Yes"), levels = c(FALSE, TRUE)))
+
+map2 <- ggmap(newyork.map) + 
+  geom_point(data = ny, aes(x = long, y = lat, col = aline), size = 2, alpha = 0.25)+
+  scale_color_manual(values = c("slategrey", "royalblue"), name = "Access to A line?") + 
+  theme(axis.ticks = element_blank(), 
+        axis.text = element_blank(), 
+        legend.justification = c(0, 0), 
+        legend.position = c(0, 0),
+        legend.background = element_rect(fill=alpha('white', 0.4))) +
+  xlab('') + ylab('') + ggtitle("New York City subway entrances")
+
+ny %>% dplyr::select(line) %>% unique() -> lines
+lines$num <- sapply(X = str_split(string = lines$line, pattern = "-"), FUN = length)
+ny %>% dplyr::left_join(lines) -> ny
+
+map3 <- ggmap(newyork.map) + 
+  geom_point(data = ny, aes(x = long, y = lat, col = aline, size = num), alpha = 0.25)+
+  scale_color_manual(values = c("slategrey", "royalblue"), name = "Access to A line?") + 
+  scale_size(name = "Number of lines:", breaks = c(1, 2, 3, 5, 10)) + 
+  theme(axis.ticks = element_blank(), 
+        axis.text = element_blank(), 
+        legend.justification = c(0, 0), 
+        legend.position = c(0, 0),
+        legend.background = element_rect(fill=alpha('white', 0.4))) +
+  xlab('') + ylab('') + ggtitle("New York City subway entrances")
+```
+
+.footnote[
+[1] [What Is Spatial Data?](https://www.safe.com/what-is/spatial-data/)
+
+[2] Data source: [City of New York Subway Entrances](https://data.world/city-of-ny/drex-xx56)
+]
+
+---
+
+background-image: url("map1.png")
+background-position: center
+background-size: contain
+
+---
+
+background-image: url("map2.png")
+background-position: center
+background-size: contain
+
+---
+
+background-image: url("map3.png")
+background-position: center
+background-size: contain
+
+---
+
+class: inverse, center, middle
+
+# Outline
+
+---
+
+# Today's game plan:
+
+## 1. Geocoding
+
+## 2. Distance calculations
+
+## 3. Map-making
+
+## 4. Point-in-polygon analysis
+
+---
+
+class: inverse, center, middle
+
+# Geocoding
+
+---
+class: center, middle
+
+### **Geocoding** is the process of converting addresses (like a street address) into geographic coordinates (like latitude and longitude), which you can use to place markers on a map, or position the map.
+
+.footnote[
+[1] [Google Maps Geocoding API](https://developers.google.com/maps/documentation/geocoding/start#:~:text=Geocoding%20is%20the%20process%20of,into%20a%20human%2Dreadable%20address.)
+]
+
+---
+# Best practices
+
+1. Remove suite/apartment numbers (they will simply create ties).
+2. Be mindful of special characters like @, #, ?, etc. 
+3. Check for misspellings or abbreviations. 
+4. Prepare to spend some time cleaning addresses. 
+
+```{r, echo = F}
+original <- c("310 25TH AVE S #103 NASHVILLE TN 37240", 
+              "2301 VANDERBILT PLC NASHVILLE TN 37240",
+              "2400 BLAKMORE AVE NASHVILLE TN 37212",
+              "TWENTY 3RD AVE N NASHVILLE TN 37212")
+cleaned <- c("310 25TH AVE S NASHVILLE TN 37240", 
+             "2301 VANDERBILT PL NASHVILLE TN 37240",
+             "2400 BLAKEMORE AVE NASHVILLE TN 37212",
+             "23RD AVE N NASHVILLE TN 37212")
+
+options(width = 60)
+data.frame(original, cleaned)
+```
+
+.footnote[
+[1] [Blossom (2014), Geocoding Best Practices](http://gis2.harvard.edu/services/blog/geocoding-best-practices)
+]
+
+---
+
+# How it works
+
+The algorithm begins by taking a complete street address and breaking it down into its component parts. 
+
+**Example:** 2525 WEST END AVE NASHVILLE TN 37203
+
+- **Street number:** 2525
+- **Street name:** WEST END
+- **Street type:** AVE
+- **Street suffix direction:** 
+- **City:** NASHVILLE
+- **State:** TN
+- **ZIP:** 37203
+
+This address is then compared to a reference table that has already been mapped (e.g., GoogleMaps or TomTom).
+
+.footnote[
+[1] [Blossom (2014), Geocoding Best Practices](http://gis2.harvard.edu/services/blog/geocoding-best-practices)
+]
+
+---
+
+# Level of accuracy
+
+Often (but not always) geocoders can pinpoint exact property or building of the address input. When it cannot, a few things can happen: 
+
+- a match at a less precise level
+
+  *If 170 MAIN STREET, CLEVELAND, OH cannot be found in Cleveland, the address may be matched either with a 170 MAIN STREET in a nearby town or with the city center of CLEVELAND*
+
+- address range interpolation along a street
+  
+  *170 MAIN STREET will be placed 70% of the way along the block of MAIN STREET that ranges from street numbers 100-200*
+
+Most geocoders give a level of confidence or matching. You can also confirm matches visually!
+
+.footnote[
+[1] [Blossom (2014), Geocoding Best Practices](http://gis2.harvard.edu/services/blog/geocoding-best-practices)
+]
+
+
+---
+# Example 1: Farmers Markets Directory and Geographic Data
+
+State, address, name, and zip code of farmers markets in the United States, along with attributes such as payment methods accepted and types of goods for sale. 
+
+```{r, echo = F, tidy = T}
+options(width = 60)
+farm <- read.csv("https://download.data.world/s/i2iwvf5bjnacid3s4m5uxodoepaaio", stringsAsFactors = F)
+farm %>% select(fmid, street, city, county, state, zip) %>% head(3)
+#farm %>% select(county, state, zip) %>% head(3)
+```
+
+Downloaded from the [US Department of Agriculture.](https://catalog.data.gov/dataset/farmers-markets-directory-and-geographic-data) Read it into `R`:
+
+```{r, tidy=TRUE}
+p <- "https://download.data.world/s/i2iwvf5bjnacid3s4m5uxodoepaaio"
+farm <- read.csv(p, stringsAsFactors = F)
+```
+
+---
+
+# The `ggmap` package
+
+*A collection of functions to visualize spatial data and models
+on top of static maps from various online sources (e.g Google Maps and Stamen
+Maps). It includes tools common to those tasks, including functions for
+geolocation and routing.*
+
+The `geocode()` function takes inputs:
+  - `location`: a character vector of street addresses or place names 
+  - `output`: amount of output 
+      - `output = "latlon"` returns latitude/longitude 
+      - `output = "latlona"` returns latitude/longitude + address 
+      - `output = "more"` returns same as `"latlon"` + accuracy measures `type` and `loctype`
+      - `output = "all"` returns same as `"more"` + many others
+  - `source`: source of reference table to use (set `source = "google"`)
+
+.footnote[
+[1] [D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1), 144-161.](https://journal.r-project.org/archive/2013-1/kahle-wickham.pdf)
+]
+
+---
+
+# Setting up your API key
+
+## Get a key
+First, you'll need to register for a *free* Google Maps API key here: [https://cloud.google.com/maps-platform/](https://cloud.google.com/maps-platform/). 
+
+## Register your key in `R`
+```{r, eval = F}
+ggmap::register_google(key = "YOUR KEY")
+```
+
+You'll need to call the `register_google()` command everytime you open a new session. If you want to set it permanently, instead call:
+
+```{r, eval = F}
+ggmap::register_google(key = "YOUR KEY", write = TRUE)
+```
+
+---
+# Geocoding the US farmers market directory
+
+```{r, cache = TRUE, eval = F}
+farm %>% 
+  mutate(address = paste(street, city, state, zip, sep = ", ")) %>% 
+  pull(address) %>% 
+  ggmap::geocode(output = "more", source = "google") -> farm_geo
+```
+
+```{r, cache = TRUE, message = FALSE, warning = FALSE, echo = F}
+farm %>% 
+  arrange(fmid) %>%
+  mutate(address = paste(street, city, state, zip, sep = ", ")) %>% 
+  slice(1:100) %>%
+  pull(address) %>% 
+  ggmap::geocode(output = "more", source = "google") -> farm_geo
+```
+
+```{r, echo = F}
+options(width = 60)
+farm_geo %>% head()
+```
+
+---
+
+# Checking accuracy of `ggmap::geocode()`
+
+The `type` and `loctype` outputs tell us about the geocoded match. Let's look at a few examples... 
+
+Less precise matches:
+
+- There were a couple of addresses that only gave city, state, and zip. These yielded `approximate` matches. 
+- Others gave street, city, state, and zip, which were matched with `geometric_center`. 
+
+More precise matches:
+- Ideally, addresses would be either `rooftop` level matched or `range_interpolated`. 
+
+---
+# Manual check 
+
+.pull-left[
+**Address:** Westminster, MA, 01473
+
+**Geocoded:** (42.5580692, -71.8927076)
+
+```{r, out.width='55%', fig.align='center', echo = F}
+knitr::include_graphics('oak_ridge.png')
+```
+]
+
+.pull-right[
+**Address:** Oak Ridge, OK, 74056
+
+**Geocoded:** (36.8970141, -96.1130438)
+
+```{r, out.width='55%', fig.align='center', echo = F}
+knitr::include_graphics('westminster.png')
+```
+]
+
+---
+
+
+
+
+# Alternative function `ggmap::mutate_geocode()`
+
+If you want to add latitude/longitude columns to your existing `farm` dataset, you can use `ggmap::mutate_geocode()`. It takes the address column as an input (`location = address`). 
+
+```{r, eval = F}
+farm %>% 
+  mutate(address = paste(street, city, state, zip, sep = ", ")) %>% 
+  ggmap::mutate_geocode(location = address, source = "google") -> farm
+```
+
+Now we have a dataset of `r farm %>% nrow()` farmers markets in the US with their geocoded locations as .
+
+---
+
+class: inverse, center, middle
+
+# Distance calculations
+
+---
+class: left, top
+# Great-circle distance calculations
+
+"The **great-circle distance**... is the shortest distance between two points on the surface of a sphere..." [(Wikipedia)](Wikipedia)
+
+Given two `(lat, lon)` coordinates, there are two common options here:
+
+1. Spherical Law of Cosines
+2. Haversine Formula
+
+It has been suggested that Haversine Formula is more robust than the Spherical Law of Cosines at very small distances (due to rounding). 
+
+Both calculations have been implemented in the `R` package `geosphere`. 
+
+.footnote[
+[1] [Great-circle distance calculations in R](https://www.r-bloggers.com/2010/11/great-circle-distance-calculations-in-r/)
+]
+
+---
+
+# The `geosphere` package
+
+*Spherical trigonometry for geographic applications. That is, compute distances and related measures for angular (longitude/latitude) locations.*
+
+Functions `distHaversine()` and `distCosine()` take the same inputs: 
+
+  - `p1` and `p2`: longitude/latitude of point(s)
+  - `r`: radius of the earth (set `= 3958.8` for output in miles and `= 6378137` for output in meters)
+
+and give individual distance calculations.
+
+.footnote[
+[1] [R. Hijmans. Introduction to the "geosphere” package](https://cran.r-project.org/web/packages/geosphere/vignettes/geosphere.pdf)
+]
+
+---
+
+# The `geosphere` package
+
+*Spherical trigonometry for geographic applications. That is, compute distances and related measures for angular (longitude/latitude) locations.*
+
+The `distm()` function takes two sets of points (rather than two points) and returns a matrix of the distances between the sets. 
+
+  - `x` and `y`: longitude/latitude of point(s). If `y` is null, `distm(x)` returns the pairwise distances between each point in `x`. 
+  - `fun`: which function to use to compute distances (set `fun = distHaversine` or `fun = distCosine`)
+
+**Note:** Since `distm()` does not have a `r` input, the output will always be in meters by default. 
+
+.footnote[
+[1] [R. Hijmans. Introduction to the "geosphere” package](https://cran.r-project.org/web/packages/geosphere/vignettes/geosphere.pdf)
+]
+
+---
+
+# The `geosphere` package
+
+*Spherical trigonometry for geographic applications. That is, compute distances and related measures for angular (longitude/latitude) locations.*
+
+The `distm()` function takes two sets of points (rather than two points) and returns a matrix of the distances between the sets. 
+
+  - `x` and `y`: longitude/latitude of point(s). If `y` is null, `distm(x)` returns the pairwise distances between each point in `x`. 
+  - `fun`: which function to use to compute distances (set `fun = distHaversine` or `fun = distCosine`)
+
+**Note:** Since `distm()` does not have a `r` input, the output will always be in meters by default. 
+
+.footnote[
+[1] [R. Hijmans. Introduction to the "geosphere” package](https://cran.r-project.org/web/packages/geosphere/vignettes/geosphere.pdf)
+]
+
+---
+
+# Distance between Knoxville farmers markets
+
+There are `r farm %>% dplyr::filter(state == "Tennessee", city == "Knoxville") %>% nrow()` registered farmers markets in Knoxville, TN. 
+
+Let's use Haversine formula to find the distance between `fmid` `1019189` and `1019345`:
+
+```{r}
+
+```
+
+---
+
+class: center, middle
+# Thank you! Any questions?
+
+---
+# References
+
