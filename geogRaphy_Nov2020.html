@@ -48,7 +48,7 @@ class: center, middle
 ]
 
 .pull-right[
-  ![](Vector.png)
+  ![](images/Vector.png)
 ]
 
 .footnote[
@@ -69,7 +69,7 @@ class: center, middle
 ]
 
 .pull-right[
-  ![](raster.png)
+  ![](images/raster.png)
 ]
 
 .footnote[
@@ -88,8 +88,6 @@ class: center, middle
   - Non-spatial features are called **attributes**.
   - Example: New York City subway entrances.
 
-
-
 .footnote[
 [1] [What Is Spatial Data?](https://www.safe.com/what-is/spatial-data/)
 
@@ -98,19 +96,19 @@ class: center, middle
 
 ---
 
-background-image: url("map1.png")
+background-image: url("images/map1.png")
 background-position: center
 background-size: contain
 
 ---
 
-background-image: url("map2.png")
+background-image: url("images/map2.png")
 background-position: center
 background-size: contain
 
 ---
 
-background-image: url("map3.png")
+background-image: url("images/map3.png")
 background-position: center
 background-size: contain
 
@@ -215,9 +213,8 @@ Most geocoders give a level of confidence or matching. You can also confirm matc
 [1] [Blossom (2014), Geocoding Best Practices](http://gis2.harvard.edu/services/blog/geocoding-best-practices)
 ]
 
-
 ---
-# Example 1: Farmers Markets Directory and Geographic Data
+# Example: Farmers Markets Directory and Geographic Data
 
 State, address, name, and zip code of farmers markets in the United States, along with attributes such as payment methods accepted and types of goods for sale. 
 
@@ -237,7 +234,7 @@ Downloaded from the [US Department of Agriculture.](https://catalog.data.gov/dat
 
 
 ```r
-p &lt;- "https://download.data.world/s/i2iwvf5bjnacid3s4m5uxodoepaaio"
+p &lt;- "https://raw.githubusercontent.com/sarahlotspeich/geogRaphy/main/data/us_farmers_markets.csv"
 farm &lt;- read.csv(p, stringsAsFactors = F)
 ```
 
@@ -332,7 +329,8 @@ More precise matches:
 
 **Geocoded:** (42.5580692, -71.8927076)
 
-&lt;img src="oak_ridge.png" width="55%" style="display: block; margin: auto;" /&gt;
+&lt;img src="images/westminster_ma.png" width="55%" style="display: block; margin: auto;" /&gt;
+
 ]
 
 .pull-right[
@@ -340,13 +338,10 @@ More precise matches:
 
 **Geocoded:** (36.8970141, -96.1130438)
 
-&lt;img src="westminster.png" width="55%" style="display: block; margin: auto;" /&gt;
+&lt;img src="images/oak_ridge_ok.png" width="55%" style="display: block; margin: auto;" /&gt;
 ]
 
 ---
-
-
-
 
 # Alternative function `ggmap::mutate_geocode()`
 
@@ -359,7 +354,7 @@ farm %&gt;%
   ggmap::mutate_geocode(location = address, source = "google") -&gt; farm
 ```
 
-Now we have a dataset of 1368 farmers markets in the US with their geocoded locations as .
+Now we have a dataset of 1368 farmers markets in the US with their geocoded locations as `(lat, lon)` coordinates.
 
 ---
 
@@ -377,8 +372,6 @@ Given two `(lat, lon)` coordinates, there are two common options here:
 
 1. Spherical Law of Cosines
 2. Haversine Formula
-
-It has been suggested that Haversine Formula is more robust than the Spherical Law of Cosines at very small distances (due to rounding). 
 
 Both calculations have been implemented in the `R` package `geosphere`. 
 
@@ -439,13 +432,63 @@ The `distm()` function takes two sets of points (rather than two points) and ret
 
 ---
 
-# Distance between Knoxville farmers markets
-
-There are 4 registered farmers markets in Knoxville, TN. 
-
-Let's use Haversine formula to find the distance between `fmid` `1019189` and `1019345`:
+# Distance between two Knoxville farmers markets
 
 
+```r
+farm %&gt;% filter(fmid == 1019189) -&gt; fmid1019189
+farm %&gt;% filter(fmid == 1019624) -&gt; fmid1019624
+```
+
+Use Haversine formula and Spherical Law of Cosines to find the distance (in miles):
+
+
+```r
+geosphere::distHaversine(p1 = fmid1019189[, c("lon", "lat")], 
+                         p2 = fmid1019624[, c("lon", "lat")], 
+                         r = 3958.8)
+```
+
+```
+## [1] 1.300333
+```
+
+```r
+geosphere::distCosine(p1 = fmid1019189[, c("lon", "lat")], 
+                      p2 = fmid1019624[, c("lon", "lat")], 
+                      r = 3958.8)
+```
+
+```
+## [1] 1.300333
+```
+
+---
+
+# Distance between all Knoxville farmers markets
+
+
+```r
+farm %&gt;% filter(city == "Knoxville", state == "Tennessee") -&gt; knx_fm
+```
+
+There are 4 farmers markets registered in Knoxville, TN. Look at the full 4  by 4 distance matrix for them all. 
+
+
+```r
+geosphere::distm(x = knx_fm[, c("lon", "lat")], 
+                 fun = geosphere::distHaversine) * 0.000621371
+```
+
+```
+##          [,1]      [,2]     [,3]      [,4]
+## [1,] 0.000000 1.3017748 4.478106 1.2183703
+## [2,] 1.301775 0.0000000 5.543254 0.8626713
+## [3,] 4.478106 5.5432535 0.000000 4.8505622
+## [4,] 1.218370 0.8626713 4.850562 0.0000000
+```
+
+The `* 0.000621371` transforms the matrix from meters to miles. 
 
 ---
 

@@ -51,7 +51,7 @@ class: center, middle
 ]
 
 .pull-right[
-  ![](Vector.png)
+  ![](images/Vector.png)
 ]
 
 .footnote[
@@ -72,7 +72,7 @@ class: center, middle
 ]
 
 .pull-right[
-  ![](raster.png)
+  ![](images/raster.png)
 ]
 
 .footnote[
@@ -91,54 +91,6 @@ class: center, middle
   - Non-spatial features are called **attributes**.
   - Example: New York City subway entrances.
 
-```{r, echo = F, cache = TRUE, warning = F, message = F, fig.width = 10, fig.height = 7}
-options(digits=14)
-ny <- read.csv("https://download.data.world/s/elzuv3txcj2hcxw7im2v7b4rlo3alj", stringsAsFactors = F) %>% 
-  dplyr::mutate(long = NA, lat = NA)
-for (r in 1:nrow(ny)) {
-  geo_r <- ny$the_geom[r] %>% str_split(pattern = " ")
-  long_r <- as.numeric(sub(pattern = "\\(", replacement = "", x = geo_r[[1]][2]))
-  lat_r <- as.numeric(sub(pattern = "\\)", replacement = "", x = geo_r[[1]][3]))
-  ny$long[r] <- long_r
-  ny$lat[r] <- lat_r
-}
-
-newyork.map <- ggmap::get_map(location= 'Lower Manhattan, New York', 
-                       maptype='roadmap', color='bw',source='google',zoom=13)
-
-map1 <- ggmap(newyork.map) + 
-  geom_point(data = ny, aes(x = long, y = lat), color = 'seagreen', size = 2, alpha = 0.25)+
-  theme(axis.ticks = element_blank(), axis.text = element_blank())+
-  xlab('') + ylab('') + ggtitle("New York City subway entrances")
-
-ny %<>% dplyr::mutate(aline = factor(grepl("A", line), labels = c("No", "Yes"), levels = c(FALSE, TRUE)))
-
-map2 <- ggmap(newyork.map) + 
-  geom_point(data = ny, aes(x = long, y = lat, col = aline), size = 2, alpha = 0.25)+
-  scale_color_manual(values = c("slategrey", "royalblue"), name = "Access to A line?") + 
-  theme(axis.ticks = element_blank(), 
-        axis.text = element_blank(), 
-        legend.justification = c(0, 0), 
-        legend.position = c(0, 0),
-        legend.background = element_rect(fill=alpha('white', 0.4))) +
-  xlab('') + ylab('') + ggtitle("New York City subway entrances")
-
-ny %>% dplyr::select(line) %>% unique() -> lines
-lines$num <- sapply(X = str_split(string = lines$line, pattern = "-"), FUN = length)
-ny %>% dplyr::left_join(lines) -> ny
-
-map3 <- ggmap(newyork.map) + 
-  geom_point(data = ny, aes(x = long, y = lat, col = aline, size = num), alpha = 0.25)+
-  scale_color_manual(values = c("slategrey", "royalblue"), name = "Access to A line?") + 
-  scale_size(name = "Number of lines:", breaks = c(1, 2, 3, 5, 10)) + 
-  theme(axis.ticks = element_blank(), 
-        axis.text = element_blank(), 
-        legend.justification = c(0, 0), 
-        legend.position = c(0, 0),
-        legend.background = element_rect(fill=alpha('white', 0.4))) +
-  xlab('') + ylab('') + ggtitle("New York City subway entrances")
-```
-
 .footnote[
 [1] [What Is Spatial Data?](https://www.safe.com/what-is/spatial-data/)
 
@@ -147,19 +99,19 @@ map3 <- ggmap(newyork.map) +
 
 ---
 
-background-image: url("map1.png")
+background-image: url("images/map1.png")
 background-position: center
 background-size: contain
 
 ---
 
-background-image: url("map2.png")
+background-image: url("images/map2.png")
 background-position: center
 background-size: contain
 
 ---
 
-background-image: url("map3.png")
+background-image: url("images/map3.png")
 background-position: center
 background-size: contain
 
@@ -264,23 +216,21 @@ Most geocoders give a level of confidence or matching. You can also confirm matc
 [1] [Blossom (2014), Geocoding Best Practices](http://gis2.harvard.edu/services/blog/geocoding-best-practices)
 ]
 
-
 ---
-# Example 1: Farmers Markets Directory and Geographic Data
+# Example: Farmers Markets Directory and Geographic Data
 
 State, address, name, and zip code of farmers markets in the United States, along with attributes such as payment methods accepted and types of goods for sale. 
 
 ```{r, echo = F, tidy = T}
 options(width = 60)
-farm <- read.csv("https://download.data.world/s/i2iwvf5bjnacid3s4m5uxodoepaaio", stringsAsFactors = F)
+farm <- read.csv("https://raw.githubusercontent.com/sarahlotspeich/geogRaphy/main/data/us_farmers_markets.csv", stringsAsFactors = F)
 farm %>% select(fmid, street, city, county, state, zip) %>% head(3)
-#farm %>% select(county, state, zip) %>% head(3)
 ```
 
 Downloaded from the [US Department of Agriculture.](https://catalog.data.gov/dataset/farmers-markets-directory-and-geographic-data) Read it into `R`:
 
 ```{r, tidy=TRUE}
-p <- "https://download.data.world/s/i2iwvf5bjnacid3s4m5uxodoepaaio"
+p <- "https://raw.githubusercontent.com/sarahlotspeich/geogRaphy/main/data/us_farmers_markets.csv"
 farm <- read.csv(p, stringsAsFactors = F)
 ```
 
@@ -371,8 +321,9 @@ More precise matches:
 **Geocoded:** (42.5580692, -71.8927076)
 
 ```{r, out.width='55%', fig.align='center', echo = F}
-knitr::include_graphics('oak_ridge.png')
+knitr::include_graphics('images/westminster_ma.png')
 ```
+
 ]
 
 .pull-right[
@@ -381,14 +332,11 @@ knitr::include_graphics('oak_ridge.png')
 **Geocoded:** (36.8970141, -96.1130438)
 
 ```{r, out.width='55%', fig.align='center', echo = F}
-knitr::include_graphics('westminster.png')
+knitr::include_graphics('images/oak_ridge_ok.png')
 ```
 ]
 
 ---
-
-
-
 
 # Alternative function `ggmap::mutate_geocode()`
 
@@ -400,7 +348,7 @@ farm %>%
   ggmap::mutate_geocode(location = address, source = "google") -> farm
 ```
 
-Now we have a dataset of `r farm %>% nrow()` farmers markets in the US with their geocoded locations as .
+Now we have a dataset of `r farm %>% nrow()` farmers markets in the US with their geocoded locations as `(lat, lon)` coordinates.
 
 ---
 
@@ -418,8 +366,6 @@ Given two `(lat, lon)` coordinates, there are two common options here:
 
 1. Spherical Law of Cosines
 2. Haversine Formula
-
-It has been suggested that Haversine Formula is more robust than the Spherical Law of Cosines at very small distances (due to rounding). 
 
 Both calculations have been implemented in the `R` package `geosphere`. 
 
@@ -480,15 +426,41 @@ The `distm()` function takes two sets of points (rather than two points) and ret
 
 ---
 
-# Distance between Knoxville farmers markets
-
-There are `r farm %>% dplyr::filter(state == "Tennessee", city == "Knoxville") %>% nrow()` registered farmers markets in Knoxville, TN. 
-
-Let's use Haversine formula to find the distance between `fmid` `1019189` and `1019345`:
+# Distance between two Knoxville farmers markets
 
 ```{r}
-
+farm %>% filter(fmid == 1019189) -> fmid1019189
+farm %>% filter(fmid == 1019624) -> fmid1019624
 ```
+
+Use Haversine formula and Spherical Law of Cosines to find the distance (in miles):
+
+```{r}
+geosphere::distHaversine(p1 = fmid1019189[, c("lon", "lat")], 
+                         p2 = fmid1019624[, c("lon", "lat")], 
+                         r = 3958.8)
+
+geosphere::distCosine(p1 = fmid1019189[, c("lon", "lat")], 
+                      p2 = fmid1019624[, c("lon", "lat")], 
+                      r = 3958.8)
+```
+
+---
+
+# Distance between all Knoxville farmers markets
+
+```{r}
+farm %>% filter(city == "Knoxville", state == "Tennessee") -> knx_fm
+```
+
+There are `r knx_fm %>% nrow()` farmers markets registered in Knoxville, TN. Look at the full `r knx_fm %>% nrow()`  by `r knx_fm %>% nrow()` distance matrix for them all. 
+
+```{r}
+geosphere::distm(x = knx_fm[, c("lon", "lat")], 
+                 fun = geosphere::distHaversine) * 0.000621371
+```
+
+The `* 0.000621371` transforms the matrix from meters to miles. 
 
 ---
 
