@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-=======
-#my_key <- "FILL THIS IN"
-
->>>>>>> main
 library(ggmap)
 
 # Register your API key
