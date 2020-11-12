@@ -1,4 +1,4 @@
-my_key <- "AIzaSyCt7wC2bLJKbbPl0-3GM0o7LDccLuMycRk"
+#my_key <- "FILL THIS IN"
 
 library(ggmap)
 
