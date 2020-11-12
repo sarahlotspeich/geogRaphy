@@ -1,5 +1,3 @@
-my_key <- "AIzaSyCt7wC2bLJKbbPl0-3GM0o7LDccLuMycRk"
-
 library(ggmap)
 
 # Register your API key
@@ -10,7 +8,7 @@ ggmap::register_google(key = my_key, write = TRUE)
 farm <- read.csv("https://raw.githubusercontent.com/sarahlotspeich/geogRaphy/main/data/us_farmers_markets.csv", stringsAsFactors = F)
 
 # Combine address = street, city, state, zip 
-farm$address <- with(farm, paste(street, city, state, zip, sep = ", "))
+farm <- mutate(farm, address = paste(street, city, state, zip, sep = ", "))
 
 # Geocode the first 10 addresses 
 (farm_geo <- ggmap::geocode(location = farm$address[1:10], output = "more", source = "google"))
@@ -22,7 +20,7 @@ farm10$lon <- farm10$lat <- NULL
 (farm10 <- ggmap::mutate_geocode(data = farm10, location = address, source = "google"))
 
 # Subset to all 4 Knoxville farmers markets 
-(knx_fm <- subset(farm, city == "Knoxville" & state == "Tennessee"))
+(knx_fm <- filter(farm, city == "Knoxville", state == "Tennessee"))
 
 # Use Haversine formula to calculate the distance between 
 ## the first 2 Knoxville markets 
