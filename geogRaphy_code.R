@@ -1,4 +1,5 @@
 library(ggmap)
+library(dplyr)
 
 # Register your API key
 ggmap::register_google(key = my_key)
@@ -67,18 +68,18 @@ sum(walk_route$minutes, na.rm = TRUE) # travel time
 
 # Get map data from ggplot2 for 48 contiguous United States 
 library(ggplot2)
-(contig_us <- ggplot2::map_data("state"))
+contig_us <- ggplot2::map_data("state")
+head(contig_us)
+# Other map_data options: "county", "usa", "france", "italy", "nz", "world", "world2"
 
 # Create a map of the US
-ggplot(us_map) + 
-          geom_polygon(data = contig_us, 
-                       aes(x = long, y = lat, group = group), 
+ggplot(contig_us) + 
+          geom_polygon(aes(x = long, y = lat, group = group), 
                        color = "black") +
           theme_minimal() + 
           theme(axis.ticks = element_blank(), 
                 axis.text = element_blank())+
-          xlab('') + ylab('') 
-us_map
+          xlab('') + ylab('') -> us_map
 
 # Layer the farmers market locations over your map of the US
 us_map + geom_point(data = farm, 
@@ -90,6 +91,15 @@ us_map + geom_point(data = farm,
 ## color them by "Cheese" 
 us_map + geom_point(data = farm, 
                     aes(x = lon, y = lat, color = Cheese), 
+                    size = 2, alpha = 0.6) + 
+  scale_color_manual(values = c("lightgray", "goldenrod2")) + 
+  theme(legend.justification = c(0, 0), legend.position = c(0.83, 0),
+        legend.background = element_rect(fill=alpha('white', 0.9)))
+
+## color them by "Cheese" 
+## shape them by "Baked goods"
+us_map + geom_point(data = farm, 
+                    aes(x = lon, y = lat, color = Cheese, shape = Bakedgoods), 
                     size = 2, alpha = 0.6) + 
   scale_color_manual(values = c("lightgray", "goldenrod2")) + 
   theme(legend.justification = c(0, 0), legend.position = c(0.83, 0),
@@ -132,7 +142,7 @@ knox_map +
 
 # Use stat_density2d() to "smooth" over the farmers market locations 
 us_map + 
-  stat_density2d(data = flt_farm, geom="polygon",
+  stat_density2d(data = farm, geom="polygon",
                  aes(x = lon, y = lat, 
                      fill = ..level.., alpha = ..level..)) + 
   scale_fill_gradient(low = "lightgreen", high = "darkgreen", 
@@ -140,7 +150,7 @@ us_map +
 
 # Try using geom_hex() to create a different type of concentration plot
 us_map + 
-  geom_hex(data = flt_farm, aes(x = lon, y = lat)) + 
+  geom_hex(data = farm, aes(x = lon, y = lat)) + 
   scale_fill_gradient(low = "lightgreen", high = "darkgreen",
                       name = "Registered\nmarkets:") + 
   theme(legend.justification = c(0, 0), 
